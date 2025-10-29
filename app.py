@@ -18,14 +18,6 @@ def fetch_image(url: str) -> Image.Image:
 
 @app.route("/")
 def resize():
-    # OPTIONS 请求处理（CORS 预检）
-    if request.method == "OPTIONS":
-        response = make_response('', 204)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-
-        return response    
     # 获取客户端缓存头
     if_none_match = request.headers.get("If-None-Match", "")
     if_modified_since = request.headers.get("If-Modified-Since", "")
@@ -116,4 +108,4 @@ def resize():
     return response
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=8080)
