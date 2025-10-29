@@ -18,6 +18,14 @@ def fetch_image(url: str) -> Image.Image:
 
 @app.route("/")
 def resize():
+    # OPTIONS 请求处理（CORS 预检）
+    if request.method == "OPTIONS":
+        response = make_response('', 204)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+
+        return response    
     # 获取客户端缓存头
     if_none_match = request.headers.get("If-None-Match", "")
     if_modified_since = request.headers.get("If-Modified-Since", "")
@@ -72,14 +80,23 @@ def resize():
     else:
         width, height = orig_width, orig_height
 
+    # 确保图片是RGB模式，JPG不支持透明度
+    if img.mode in ('RGBA', 'LA', 'P'):
+        # 创建白色背景
+        background = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+        img = background
+
     # 如果尺寸未变，返回原图
     if width >= orig_width and height >= orig_height:
         buf = io.BytesIO()
-        img.save(buf, format=output_format.upper(), quality=quality)
+        img.save(buf, format="JPEG", quality=quality)
         buf.seek(0)
         
         # 创建响应并添加头部
-        response = make_response(send_file(buf, mimetype=f"image/{output_format}"))
+        response = make_response(send_file(buf, mimetype="image/jpeg"))
         response.headers['Last-Modified'] = last_modified
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
@@ -93,11 +110,11 @@ def resize():
     # 执行缩放
     img_resized = img.resize((width, height), Image.LANCZOS)
     buf = io.BytesIO()
-    img_resized.save(buf, format=output_format.upper(), quality=quality)
+    img_resized.save(buf, format="JPEG", quality=quality)
     buf.seek(0)
     
     # 创建响应并添加头部
-    response = make_response(send_file(buf, mimetype=f"image/{output_format}"))
+    response = make_response(send_file(buf, mimetype="image/jpeg"))
     response.headers['Last-Modified'] = last_modified
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
@@ -106,6 +123,6 @@ def resize():
     response.headers['ETag'] = f'"{hash(buf.getvalue())}"'
     
     return response
-
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=8080)
