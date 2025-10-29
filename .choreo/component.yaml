@@ -30,7 +30,7 @@ endpoints:
       # This is mandatory if the endpoint type is set to REST or GraphQL.
       basePath: /rs
       # +required Numeric port value that gets exposed via the endpoint
-      port: 59999
+      port: 5000
     # +required Type of traffic that the endpoint is accepting.
     # Allowed values: REST, GraphQL, GRPC, TCP, UDP.
     type: REST
